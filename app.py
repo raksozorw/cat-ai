@@ -6,20 +6,13 @@ from PIL import Image
 import torch.nn as nn
 import io  # Import the 'io' module
 from flask_cors import CORS
+import model
 
 
 app = Flask(__name__)
 CORS(app)
 
-# Create an instance of the same model architecture
-model = models.resnet50(pretrained=True)
-num_features = model.fc.in_features
-model.fc = nn.Linear(num_features, 2)  # Replace '2' with the number of classes in your cat recognition task
 
-# Load the state dictionary into the model
-state_dict = torch.load('cat_recognition_model4.pth')
-model.load_state_dict(state_dict)
-model.eval()  # Set the model to evaluation mode
 
 # Define a transformation to preprocess images
 transform = transforms.Compose([
@@ -41,7 +34,7 @@ def predict_cat():
 
         # Make a prediction and get class probabilities
         with torch.no_grad():
-            output = model(image.unsqueeze(0))  # Unsqueeze to add a batch dimension
+            output = model.model(image.unsqueeze(0))  # Unsqueeze to add a batch dimension
             probabilities = torch.softmax(output, dim=1).numpy()
 
         # Get the predicted class
@@ -65,6 +58,8 @@ def predict_cat():
 
     except Exception as e:
         return jsonify({'error': str(e)})
-
+def handler():
+   import model  
+   return app
 if __name__ == '__main__':
     app.run(debug=True)
