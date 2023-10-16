@@ -17,7 +17,7 @@ num_features = model.fc.in_features
 model.fc = nn.Linear(num_features, 2)  # Replace '2' with the number of classes in your cat recognition task
 
 # Load the state dictionary into the model
-state_dict = torch.load('cat_recognition_model2.pth')
+state_dict = torch.load('cat_recognition_model4.pth')
 model.load_state_dict(state_dict)
 model.eval()  # Set the model to evaluation mode
 
