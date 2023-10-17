@@ -1,26 +1,50 @@
 from flask import Flask, request, jsonify
 import torch
-import torchvision.models as models
 from torchvision import transforms
 from PIL import Image
-import torch.nn as nn
-import io  # Import the 'io' module
+import io
 from flask_cors import CORS
-import model
+import boto3
+import botocore
+from botocore import UNSIGNED
+import torchvision.models as models
+import torch.nn as nn
 
+import os
 
 app = Flask(__name__)
 CORS(app)
 
+# Initialize S3 - currently the resource is public 
+# TODO fix local credentials and make this private
+s3 = boto3.client('s3', config=botocore.config.Config(signature_version=UNSIGNED))
 
-
-# Define a transformation to preprocess images
+# Process images
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
 ])
 
-# API endpoint to accept and process images
+# Load the model from S3
+s3_bucket_name = 'cai-test-bucket'  
+model_key = 'models/cat_recognition_model4.pth'  
+local_model_path = '/tmp/model.pth'  
+
+if not os.path.exists(local_model_path):
+    s3.download_file(s3_bucket_name, model_key, local_model_path)
+
+
+
+
+
+model = models.resnet50(pretrained=True) 
+num_features = model.fc.in_features
+model.fc = nn.Linear(num_features, 2)
+
+model.load_state_dict(torch.load(local_model_path, map_location='cpu')) 
+model.eval()
+
+# API endpoint to accept and eval images
 @app.route('/predict', methods=['POST'])
 def predict_cat():
     print('request received')
@@ -34,7 +58,7 @@ def predict_cat():
 
         # Make a prediction and get class probabilities
         with torch.no_grad():
-            output = model.model(image.unsqueeze(0))  # Unsqueeze to add a batch dimension
+            output = model(image.unsqueeze(0))  
             probabilities = torch.softmax(output, dim=1).numpy()
 
         # Get the predicted class
@@ -43,12 +67,10 @@ def predict_cat():
         # Define class labels
         class_labels = ["jarlsberg", "kvarg"]
 
-        # format probs for JSON
+        # Format probs for JSON
         probabilities_dict = {class_labels[i]: float(probabilities[0, i]) for i in range(len(class_labels))}
 
-
         # Return the prediction and class probabilities as a JSON response
-
         print(probabilities)
         response_data = {
             'prediction': class_labels[predicted.item()],
@@ -58,8 +80,9 @@ def predict_cat():
 
     except Exception as e:
         return jsonify({'error': str(e)})
+
 def handler():
-   import model  
    return app
+
 if __name__ == '__main__':
     app.run(debug=True)
