@@ -1,8 +1,8 @@
 # Overview
 
-I've trained a model to differentiate between my two cats, Kvarg and Jarlsberg.
+I've trained a model with PyTorch to differentiate between my two cats, Kvarg and Jarlsberg.
 
-The model can be run on images uploaded via an API. In a separate repo, I have a React frontend to send these images multiple ways.
+The model can be run on images uploaded via an API. In a separate repo, I have a React frontend to send these images.
 
 ## Architecture
 
