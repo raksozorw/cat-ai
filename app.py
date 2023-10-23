@@ -13,17 +13,11 @@ import torch.nn as nn
 import os
 
 app = Flask(__name__)
-CORS(app)
+CORS(app) # for dev/testing locally
 
 # Initialize S3 - currently the resource is public 
-# TODO fix local credentials and make this private
 s3 = boto3.client('s3', config=botocore.config.Config(signature_version=UNSIGNED))
 
-# Process images
-transform = transforms.Compose([
-    transforms.Resize((224, 224)),
-    transforms.ToTensor(),
-])
 
 # Load the model from S3
 s3_bucket_name = 'cai-test-bucket'  
@@ -34,7 +28,11 @@ if not os.path.exists(local_model_path):
     s3.download_file(s3_bucket_name, model_key, local_model_path)
 
 
-
+# Process images
+transform = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),
+])
 
 
 model = models.resnet50(pretrained=True) 
@@ -85,4 +83,4 @@ def handler():
    return app
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', debug=True, port=80)
+    app.run(host='0.0.0.0', debug=True, port=80) # host and port setup for docker
